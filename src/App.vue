@@ -201,14 +201,20 @@ const edit = (data: dataType) => {
 const textareaBlur = (data: dataType) => {
   editKey.value = "";
   workMessage.value[data.day] = textareaText.value;
+  postCalendars({ day: data.day, message: textareaText.value });
   textareaText.value = "";
-  postCalendars(workMessage.value);
 };
 
 onMounted(() => {
   getCalendars().then((res) => {
+    const allWorkCalendar = {};
     // @ts-ignore
-    workMessage.value = res[0];
+    res.forEach((item) => {
+      // @ts-ignore
+      allWorkCalendar[item.day] = item.message;
+    });
+    // @ts-ignore
+    workMessage.value = allWorkCalendar;
   });
 });
 </script>
