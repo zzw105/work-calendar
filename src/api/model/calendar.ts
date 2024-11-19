@@ -1,9 +1,15 @@
 import service from "../request";
 
 // 获取用户列表
-export function getCalendars() {
+export const getCalendars: AxiosResponseI<
+  getCalendarsReq,
+  getCalendarsRes
+> = () => {
   return service.get("/");
-}
-export function postCalendars(data: { [key: string]: string }) {
+};
+export const postCalendars: AxiosResponseI<
+  postCalendarsReq,
+  postCalendarsRes
+> = (data) => {
   return service.post("/", data);
-}
+};

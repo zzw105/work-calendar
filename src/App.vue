@@ -207,13 +207,10 @@ const textareaBlur = (data: dataType) => {
 
 onMounted(() => {
   getCalendars().then((res) => {
-    const allWorkCalendar = {};
-    // @ts-ignore
+    const allWorkCalendar: { [key: string]: string } = {};
     res.forEach((item) => {
-      // @ts-ignore
       allWorkCalendar[item.day] = item.message;
     });
-    // @ts-ignore
     workMessage.value = allWorkCalendar;
   });
 });
