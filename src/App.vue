@@ -2,42 +2,63 @@
   <el-config-provider :locale="zhCn">
     <el-calendar ref="calendar" v-model="calendarValue" class="calendar">
       <template #header="{ date }">
-        <div class="dateSelection">
-          <el-select
-            v-model="yearSelect"
-            placeholder="Select"
-            style="width: 100px"
-          >
-            <el-option
-              v-for="item in yearSelectOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-          <el-select
-            v-model="monthSelect"
-            placeholder="Select"
-            style="width: 100px"
-          >
-            <el-option
-              v-for="item in monthSelectOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+        <div class="titleBar">
+          <div class="dateSelection">
+            <el-select
+              v-model="yearSelect"
+              placeholder="Select"
+              style="width: 100px"
+            >
+              <el-option
+                v-for="item in yearSelectOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+            <el-select
+              v-model="monthSelect"
+              placeholder="Select"
+              style="width: 100px"
+            >
+              <el-option
+                v-for="item in monthSelectOptions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
+            </el-select>
+          </div>
+          <span>{{ date }}</span>
+          <el-button-group>
+            <el-button size="small" @click="selectDate('prev-month')">
+              上个月
+            </el-button>
+            <el-button size="small" @click="selectDate('today')">今</el-button>
+            <el-button size="small" @click="selectDate('next-month')">
+              下个月
+            </el-button>
+          </el-button-group>
         </div>
-        <span>{{ date }}</span>
-        <el-button-group>
-          <el-button size="small" @click="selectDate('prev-month')">
-            上个月
-          </el-button>
-          <el-button size="small" @click="selectDate('today')">今</el-button>
-          <el-button size="small" @click="selectDate('next-month')">
-            下个月
-          </el-button>
-        </el-button-group>
+        <el-collapse v-model="activeNames" @change="handleChange">
+          <el-collapse-item :title="`${monthSelect}月该做的事`" name="1">
+            <el-input
+              v-if="isWhatToDoTextareaEdit"
+              v-model="whatToDoTextarea"
+              :rows="4"
+              type="textarea"
+              placeholder="请输入"
+              @blur="whatToDoTextareaBlur()"
+              v-focus
+            />
+            <template v-else>
+              {{ whatToDoTextarea || "暂无" }}
+              <el-icon @click="isWhatToDoTextareaEdit = true">
+                <Edit />
+              </el-icon>
+            </template>
+          </el-collapse-item>
+        </el-collapse>
       </template>
       <template #date-cell="{ data }">
         <div class="date-cell">
@@ -58,9 +79,9 @@
             </template>
           </div>
         </div>
-        <el-icon v-if="editKey !== data.day" @click="edit(data)"
-          ><Edit
-        /></el-icon>
+        <el-icon v-if="editKey !== data.day" @click="edit(data)">
+          <Edit />
+        </el-icon>
       </template>
     </el-calendar>
   </el-config-provider>
@@ -69,7 +90,11 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch } from "vue";
 import zhCn from "element-plus/es/locale/lang/zh-cn";
-import type { CalendarDateType, CalendarInstance } from "element-plus";
+import type {
+  CalendarDateType,
+  CalendarInstance,
+  CollapseModelValue,
+} from "element-plus";
 import { getCalendars, postCalendars } from "./api/model/calendar";
 
 interface dataType {
@@ -214,42 +239,94 @@ onMounted(() => {
     workMessage.value = allWorkCalendar;
   });
 });
+
+const whatToDoTextarea = ref("");
+const isWhatToDoTextareaEdit = ref(false);
+const activeNames = ref(["1"]);
+const handleChange = (val: CollapseModelValue) => {
+  console.log(val);
+};
+
+const whatToDoTextareaBlur = () => {};
 </script>
 
 <style scoped lang="less">
 .calendar {
-  :deep(.el-calendar-day) {
-    position: relative;
-    .date-cell {
+  :deep(.el-calendar__header) {
+    flex-direction: column;
+    .titleBar {
       display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+  }
+  :deep(.el-calendar__body) {
+    thead {
+      th {
+        font-weight: bolder;
+        font-size: 24px;
+        font-family: cursive;
+        background-color: #fe7e2ecc;
+        color: #fff;
+      }
+    }
+    td.current:not(.is-today) .day {
+      background-color: #7591ff2f;
+    }
+    td.prev .day {
+      background-color: #7591ff1b;
+    }
+    td.current.is-today {
+      color: #ffaa00;
+
       .day {
-        border-bottom: 1px solid #ccc;
-      }
-      .content {
-        flex: 1;
-        word-wrap: break-word;
-        white-space: pre-wrap;
-        overflow: auto;
-        padding-top: 3px;
+        background-color: #7591ff63;
       }
     }
-    .el-icon {
-      position: absolute;
-      display: none;
-      bottom: 4px;
-      right: 4px;
-      transition: all 0.2s;
-      &:hover {
-        font-size: 20px;
+
+    .el-calendar-day {
+      position: relative;
+      padding: 0;
+      .date-cell {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        // padding: 8px;
+        .day {
+          // border-bottom: 1px solid #ccc;
+          padding: 8px;
+          padding-bottom: 4px;
+        }
+        .content {
+          flex: 1;
+          word-wrap: break-word;
+          white-space: pre-wrap;
+          overflow: auto;
+          padding: 8px;
+          padding-top: 3px;
+        }
       }
-    }
-    &:hover {
       .el-icon {
-        display: block;
+        position: absolute;
+        display: none;
+        bottom: 4px;
+        right: 4px;
+        transition: all 0.2s;
+        &:hover {
+          font-size: 20px;
+        }
       }
+      &:hover {
+        .el-icon {
+          display: block;
+        }
+      }
+    }
+  }
+  :deep(.el-collapse) {
+    .el-collapse-item__content {
+      padding-bottom: 0;
     }
   }
 }

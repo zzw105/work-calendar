@@ -11,6 +11,15 @@ body {
   --el-calendar-cell-width: 120px;
 }
 
+#app .el-collapse {
+  --el-collapse-header-height: 35px;
+  --el-collapse-border-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 textarea {
   resize: none !important;
 
