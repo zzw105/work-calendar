@@ -41,7 +41,11 @@
           </el-button-group>
         </div>
         <el-collapse v-model="activeNames" @change="handleChange">
-          <el-collapse-item :title="`${monthSelect}月该做的事`" name="1">
+          <el-collapse-item
+            class="isWhatToDoBox"
+            :title="`${monthSelect}月该做的事`"
+            name="1"
+          >
             <el-input
               v-if="isWhatToDoTextareaEdit"
               v-model="whatToDoTextarea"
@@ -52,8 +56,8 @@
               v-focus
             />
             <template v-else>
-              {{ whatToDoTextarea || "暂无" }}
-              <el-icon @click="isWhatToDoTextareaEdit = true">
+              {{ workMessage[monthYear] || "暂无" }}
+              <el-icon class="editIcon" @click="isWhatToDoTextareaEdit = true">
                 <Edit />
               </el-icon>
             </template>
@@ -63,7 +67,7 @@
       <template #date-cell="{ data }">
         <div class="date-cell">
           <div class="day">{{ data.day.split("-").slice(1).join("-") }}</div>
-          <div class="content">
+          <div :class="['content', isHoliday(data.day) ? 'isHoliday' : '']">
             <template v-if="editKey === data.day">
               <el-input
                 v-model="textareaText"
@@ -79,7 +83,11 @@
             </template>
           </div>
         </div>
-        <el-icon v-if="editKey !== data.day" @click="edit(data)">
+        <el-icon
+          class="editIcon"
+          v-if="editKey !== data.day"
+          @click="edit(data)"
+        >
           <Edit />
         </el-icon>
       </template>
@@ -88,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import zhCn from "element-plus/es/locale/lang/zh-cn";
 import type {
   CalendarDateType,
@@ -96,6 +104,7 @@ import type {
   CollapseModelValue,
 } from "element-plus";
 import { getCalendars, postCalendars } from "./api/model/calendar";
+import { isHoliday } from "./utils";
 
 interface dataType {
   isSelected: boolean;
@@ -114,7 +123,6 @@ const vFocus = {
     });
   },
 };
-
 const calendarValue = ref(new Date());
 
 const workMessage = ref<{ [key: string]: string }>({
@@ -129,7 +137,7 @@ const yearSelect = ref(calendarValue.value.getFullYear());
 const yearSelectOptions = [
   {
     value: 2022,
-    label: "2022",
+    label: "2022年",
   },
   {
     value: 2023,
@@ -150,6 +158,18 @@ const yearSelectOptions = [
   {
     value: 2027,
     label: "2027年",
+  },
+  {
+    value: 2028,
+    label: "2028年",
+  },
+  {
+    value: 2029,
+    label: "2029年",
+  },
+  {
+    value: 2030,
+    label: "2030年",
   },
 ];
 
@@ -205,17 +225,52 @@ const monthSelectOptions = [
   },
 ];
 
+const daySelect = ref(calendarValue.value.getDate());
+
+const monthYear = computed(() => {
+  return `${yearSelect.value}-${String(monthSelect.value).padStart(2, "0")}`;
+});
+
 watch(
-  () => [yearSelect.value, monthSelect.value],
+  () => [yearSelect.value, monthSelect.value, daySelect.value],
   () => {
-    calendarValue.value = new Date(yearSelect.value, monthSelect.value - 1);
+    calendarValue.value = new Date(
+      yearSelect.value,
+      monthSelect.value - 1,
+      daySelect.value
+    );
   }
 );
 
 const calendar = ref<CalendarInstance>();
 const selectDate = (val: CalendarDateType) => {
-  if (!calendar.value) return;
-  calendar.value.selectDate(val);
+  // if (!calendar.value) return;
+  // calendar.value.selectDate(val);
+  switch (val) {
+    case "prev-month":
+      daySelect.value = 1;
+      if (monthSelect.value === 1) {
+        monthSelect.value = 12;
+        yearSelect.value -= 1;
+      } else {
+        monthSelect.value -= 1;
+      }
+      break;
+    case "next-month":
+      daySelect.value = 1;
+      if (monthSelect.value === 12) {
+        monthSelect.value = 1;
+        yearSelect.value += 1;
+      } else {
+        monthSelect.value += 1;
+      }
+      break;
+    case "today":
+      yearSelect.value = new Date().getFullYear();
+      monthSelect.value = new Date().getMonth() + 1;
+      daySelect.value = new Date().getDate();
+      break;
+  }
 };
 
 const edit = (data: dataType) => {
@@ -242,12 +297,19 @@ onMounted(() => {
 
 const whatToDoTextarea = ref("");
 const isWhatToDoTextareaEdit = ref(false);
-const activeNames = ref(["1"]);
+const activeNames = ref([]);
 const handleChange = (val: CollapseModelValue) => {
   console.log(val);
 };
 
-const whatToDoTextareaBlur = () => {};
+const whatToDoTextareaBlur = () => {
+  workMessage.value[monthYear.value] = whatToDoTextarea.value;
+  postCalendars({
+    day: monthYear.value,
+    message: whatToDoTextarea.value,
+  });
+  isWhatToDoTextareaEdit.value = false;
+};
 </script>
 
 <style scoped lang="less">
@@ -258,6 +320,10 @@ const whatToDoTextareaBlur = () => {};
       display: flex;
       justify-content: space-between;
       margin-bottom: 10px;
+    }
+    .isWhatToDoBox {
+      word-wrap: break-word;
+      white-space: pre-wrap;
     }
   }
   :deep(.el-calendar__body) {
@@ -273,8 +339,14 @@ const whatToDoTextareaBlur = () => {};
     td.current:not(.is-today) .day {
       background-color: #7591ff2f;
     }
-    td.prev .day {
-      background-color: #7591ff1b;
+    td.prev,
+    td.next {
+      .day {
+        background-color: #7591ff1b;
+      }
+      .editIcon {
+        display: none !important;
+      }
     }
     td.current.is-today {
       color: #ffaa00;
@@ -305,18 +377,12 @@ const whatToDoTextareaBlur = () => {};
           overflow: auto;
           padding: 8px;
           padding-top: 3px;
+          &.isHoliday {
+            background-color: #c8c8c81b;
+          }
         }
       }
-      .el-icon {
-        position: absolute;
-        display: none;
-        bottom: 4px;
-        right: 4px;
-        transition: all 0.2s;
-        &:hover {
-          font-size: 20px;
-        }
-      }
+
       &:hover {
         .el-icon {
           display: block;
@@ -327,7 +393,24 @@ const whatToDoTextareaBlur = () => {};
   :deep(.el-collapse) {
     .el-collapse-item__content {
       padding-bottom: 0;
+      position: relative;
+      font-size: 14px;
+      .editIcon {
+        display: block;
+      }
     }
+  }
+}
+</style>
+<style lang="less">
+.editIcon.el-icon {
+  position: absolute;
+  display: none;
+  bottom: 4px;
+  right: 4px;
+  transition: all 0.2s;
+  &:hover {
+    font-size: 20px;
   }
 }
 </style>
