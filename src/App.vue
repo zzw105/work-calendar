@@ -57,7 +57,7 @@
             />
             <template v-else>
               {{ workMessage[monthYear] || "暂无" }}
-              <el-icon class="editIcon" @click="isWhatToDoTextareaEdit = true">
+              <el-icon class="editIcon" @click="whatToDoTextareaEdit">
                 <Edit />
               </el-icon>
             </template>
@@ -309,6 +309,11 @@ const whatToDoTextareaBlur = () => {
     message: whatToDoTextarea.value,
   });
   isWhatToDoTextareaEdit.value = false;
+};
+
+const whatToDoTextareaEdit = () => {
+  whatToDoTextarea.value = workMessage.value[monthYear.value];
+  isWhatToDoTextareaEdit.value = true;
 };
 </script>
 
