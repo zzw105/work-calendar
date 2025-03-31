@@ -17,5 +17,7 @@ declare module 'vue' {
     ElInput: typeof import('element-plus/es')['ElInput']
     ElOption: typeof import('element-plus/es')['ElOption']
     ElSelect: typeof import('element-plus/es')['ElSelect']
+    Vditor: typeof import('./src/components/Vditor.vue')['default']
+    VditorReadOnly: typeof import('./src/components/VditorReadOnly.vue')['default']
   }
 }
